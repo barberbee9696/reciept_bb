@@ -482,10 +482,13 @@ $("rows").addEventListener("click",async e=>{
 
 /* ---------- settings ---------- */
 $("btnSettings").onclick=()=>{
+  if(!$("settingsPanel").hidden){
+    $("settingsPanel").hidden = true; // กดซ้ำเพื่อปิดหน้าข้อมูลบริษัท
+    return;
+  }
   $("settingsFields").innerHTML=companies.map((c,i)=>`<div class="field"><label for="sn${i}"><span class="dot" style="display:inline-block;background:${COLORS[c.id]};margin-right:6px"></span>บริษัทที่ ${i+1}</label><input id="sn${i}" value="${esc(c.name)}" maxlength="60"><textarea id="sa${i}" rows="2" placeholder="ที่อยู่ / เบอร์โทร / เลขผู้เสียภาษี (แสดงบนบิล)">${esc(c.addr||"")}</textarea></div>`).join("");
   $("settingsPanel").hidden=false;$("sn0").focus();
-};
-$("btnSetCancel").onclick=()=>{$("settingsPanel").hidden=true};
+};$("btnSetCancel").onclick=()=>{$("settingsPanel").hidden=true};
 $("btnSetSave").onclick=async()=>{
   const list=companies.map((c,i)=>({id:c.id,name:($("sn"+i).value.trim()||DEFAULT_COS[i].name),addr:$("sa"+i).value.trim()}));
   companies=list;renderCoPick();renderAll();$("settingsPanel").hidden=true;
@@ -648,6 +651,7 @@ $("xform").addEventListener("submit",async e=>{
 /* ---------- vehicles page ---------- */
 let chunks={}, regLoaded=false, carFilter=null, carLimit=200, carEdit=null, carDel=null, carFlash=null;
 function showView(v){
+$("settingsPanel").hidden = true; //
   $("vLedger").setAttribute("aria-selected",v==="ledger");$("vCars").setAttribute("aria-selected",v==="cars");
   $("ledgerView").hidden=v!=="ledger";$("carView").hidden=v!=="cars";
   if(v==="cars")renderCars();
