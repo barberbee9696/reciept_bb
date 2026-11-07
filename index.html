@@ -453,7 +453,7 @@ tfoot td{font-weight:600;background:var(--soft)}
       </div>
       <div class="field"><label for="mNote">หมายเหตุบนใบเสร็จ</label><input id="mNote" placeholder="ไม่บังคับ"></div>
       <div class="mbtns">
-        <button class="btn primary" type="button" id="mPdf">บันทึกและพิมพ์ (PDF)</button>
+        <button class="btn primary" type="button" id="mPdf">พิมพ์ (PDF)</button>
         <button class="btn" type="submit" id="mSave">บันทึกการแก้ไข</button>
       </div>
       <div class="mbtns" id="mDelRow"><button class="btn ghost" type="button" id="mDel" style="color:var(--exp)">ลบรายการนี้</button></div>
@@ -1270,24 +1270,46 @@ $("mDel").onclick=async()=>{
 };
 
 /* ---------- PDF Download (jspdf Native) ---------- */
-$("mPdf").onclick=async()=>{
-  const btn=$("mPdf");btn.disabled=true;
-  try{
-    if(!(await saveBill()))return;
-    renderSheet();mmsg("กำลังสร้างไฟล์ PDF…");
-    if(!window.html2canvas||!window.jspdf){mmsg("โหลดตัวสร้าง PDF ไม่สำเร็จ รีเฟรชหน้าแล้วลองใหม่","err");return}
-    try{await Promise.all(["400 15px Sarabun","600 15px Sarabun","700 15px Sarabun"].map(f=>document.fonts.load(f)));await document.fonts.ready}catch(e){}
-    $("sheet").style.zoom="";
-    let canvas;try{canvas=await html2canvas($("sheet"),{scale:2.5,backgroundColor:"#ffffff",useCORS:true})}finally{fitPreview()}
-    const pdf=new jspdf.jsPDF({unit:"mm",format:"a4",orientation:"portrait"});
-    let w=190,h=canvas.height*w/canvas.width;if(h>277){h=277;w=canvas.width*h/canvas.height}
-    pdf.addImage(canvas.toDataURL("image/jpeg",0.95),"JPEG",10+(190-w)/2,10,w,h);
-    const name=`ใบเสร็จ-${coName(bill.mode==="one"?$("mCo").value:bill.company)}-${$("mNo").value||"bill"}.pdf`.replace(/[\\/:*?"<>|]/g,"-");
-    
-    pdf.save(name);
-    mmsg("ดาวน์โหลด PDF เรียบร้อยแล้ว สั่งพิมพ์ได้เลย","ok");
-  }catch(err){mmsg("สร้าง PDF ไม่สำเร็จ ลองอีกครั้ง","err")}
-  finally{btn.disabled=false}
+$("mPdf").onclick = async () => {
+  const btn = $("mPdf"); btn.disabled = true;
+  try {
+    // ดึงข้อมูลจากฟอร์มมาแสดงผลบนใบเสร็จชั่วคราว (ไม่บันทึกค่ายืนยันลงฐานข้อมูล)
+    renderSheet(); 
+    mmsg("กำลังเตรียมเปิดหน้าต่าง PDF Viewer…");
+
+    if (!window.html2canvas || !window.jspdf) { 
+      mmsg("โหลดตัวสร้าง PDF ไม่สำเร็จ รีเฟรชหน้าแล้วลองใหม่", "err"); 
+      return; 
+    }
+
+    try { 
+      await Promise.all(["400 15px Sarabun", "600 15px Sarabun", "700 15px Sarabun"].map(f => document.fonts.load(f))); 
+      await document.fonts.ready; 
+    } catch (e) {}
+
+    $("sheet").style.zoom = "";
+    let canvas; 
+    try { 
+      canvas = await html2canvas($("sheet"), { scale: 2.5, backgroundColor: "#ffffff", useCORS: true }); 
+    } finally { 
+      fitPreview(); 
+    }
+
+    const pdf = new jspdf.jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+    let w = 190, h = canvas.height * w / canvas.width;
+    if (h > 277) { h = 277; w = canvas.width * h / canvas.height; }
+    pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 10 + (190 - w) / 2, 10, w, h);
+
+    // สร้าง Blob URL แล้วเปิดหน้าต่าง PDF Viewer ในแท็บใหม่
+    const blobUrl = URL.createObjectURL(pdf.output("blob"));
+    window.open(blobUrl, "_blank");
+
+    mmsg("เปิดหน้าต่าง PDF Viewer เรียบร้อยแล้ว", "ok");
+  } catch (err) {
+    mmsg("เกิดข้อผิดพลาดในการสร้าง PDF ลองอีกครั้ง", "err");
+  } finally {
+    btn.disabled = false;
+  }
 };
 
 /* ---------- data ---------- */
